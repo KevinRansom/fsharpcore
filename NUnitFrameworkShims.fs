@@ -2,7 +2,10 @@
 
 namespace NUnit.Framework
 open System
-//open Xunit
+open System.Collections.Generic
+
+#if XUNIT
+open Xunit
 
 type TestFixtureAttribute() =
     inherit System.Attribute()
@@ -11,7 +14,7 @@ type Explicit() =
     inherit System.Attribute()
 
 type TestAttribute() =
-    inherit Attribute()
+    inherit FactAttribute()
 
 type SetUpAttribute() =
     inherit System.Attribute()
@@ -23,16 +26,44 @@ type Category(_categories:string) =
 type TearDownAttribute() =
     inherit System.Attribute()
 
-type CollectionAssert =
-    static member AreEqual(expected, actual) = Assert.AreEqual(expected, actual)
-
 type IgnoreAttribute (_comment:string) =
     inherit System.Attribute ()
+
+#endif
 
 exception AssertionException of string
 
 module private Impl =
-    let rec equals (expected:obj) (actual:obj) = 
+    open FsCheck.Arb
+
+    let rec equals (expected:obj) (actual:obj) =
+
+        // get length expected
+        let toArray (o:obj) =
+            match o with
+            | :? seq<bigint> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<decimal> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<float> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<float32> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<uint64> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<int64> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<uint32> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<int32> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<uint16> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<int16> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<sbyte> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<byte> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<char> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<bool> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<string> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<UIntPtr> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<obj> as seq -> seq |> Seq.toArray :>obj
+            | _ -> o
+
+        // get length expected
+        let expected = toArray expected
+        let actual = toArray actual
+
         match expected, actual with 
         |   (:? Array as a1), (:? Array as a2) ->
                 if a1.Rank > 1 then failwith "Rank > 1 not supported"                
@@ -80,7 +111,14 @@ type Assert =
     static member False(x : bool) = Assert.IsFalse(x)
 
     static member Fail(message : string) = AssertionException(message) |> raise
-    
+
     static member Fail() = Assert.Fail("") 
 
     static member Fail(message : string, args : obj[]) = Assert.Fail(String.Format(message,args))
+
+    static member Throws( except, func: unit -> unit ) = Assert.Throws(except, func)
+
+    type CollectionAssert =
+        static member AreEqual(expected, actual) = 
+            Assert.AreEqual(expected, actual)
+

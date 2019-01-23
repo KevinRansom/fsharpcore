@@ -86,9 +86,7 @@ type AsyncType() =
         // In such case TimeoutException is raised
         // since ThreadPool cannot provide 1000 threads in 1 second
         // (the number of threads in ThreadPool is adjusted slowly).
-        Assert.DoesNotThrow(fun () ->
-            Async.RunSynchronously(computation, timeout = 1000)
-            |> ignore)
+        Async.RunSynchronously(computation, timeout = 1000) |> ignore
 
     [<Test>]
     member this.AsyncSleepCancellation1() =

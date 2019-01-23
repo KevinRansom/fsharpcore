@@ -134,7 +134,7 @@ module ChoiceUtils =
         if not <| List.isEmpty ops then
             let minTimeout = getMinTime()
             let minTimeoutOps = ops |> Seq.filter (fun op -> op.Timeout <= minTimeout) |> Seq.length
-            Assert.LessOrEqual(!completed, minTimeoutOps)
+            Assert.IsTrue(!completed <= minTimeoutOps)
 
 module LeakUtils =
     // when testing for liveness, the things that we want to observe must always be created in
@@ -161,18 +161,10 @@ type AsyncModule() =
                 do! Async.Sleep(20)
                 
             return !tickstamps
-        }     
+        }
 
-    let wait (wh : #System.Threading.WaitHandle) (timeoutMilliseconds : int) = 
-#if FX_NO_WAITONE_MILLISECONDS
-        wh.WaitOne(TimeSpan.FromMilliseconds (float timeoutMilliseconds))
-#else
-#if FX_NO_EXIT_CONTEXT_FLAGS
-        wh.WaitOne(timeoutMilliseconds)
-#else
+    let wait (wh : System.Threading.WaitHandle) (timeoutMilliseconds : int) = 
         wh.WaitOne(timeoutMilliseconds, exitContext=false)
-#endif
-#endif
 
     let dispose(d : #IDisposable) = d.Dispose()
 
@@ -240,33 +232,33 @@ type AsyncModule() =
         let delta = endTime - startTime
         Assert.IsTrue(delta.TotalMilliseconds < 1100.0, sprintf "Expected faster timeout than %.0f ms" delta.TotalMilliseconds)
 
-    [<Test>]
-    member this.``AwaitWaitHandle.TimeoutWithCancellation``() = 
-        use barrier = new System.Threading.ManualResetEvent(false)
-        use waitHandle = new System.Threading.ManualResetEvent(false)
-        let cts = new System.Threading.CancellationTokenSource()
+//    [<Test>]
+//    member this.``AwaitWaitHandle.TimeoutWithCancellation``() = 
+//        use barrier = new System.Threading.ManualResetEvent(false)
+//        use waitHandle = new System.Threading.ManualResetEvent(false)
+//        let cts = new System.Threading.CancellationTokenSource()
+//
+//        Async.AwaitWaitHandle(waitHandle, 5000)
+//        |> Async.Ignore
+//        |> fun c -> 
+//                    Async.StartWithContinuations(
+//                        c, 
+//                        (failwithf "Unexpected success %A"), 
+//                        (failwithf "Unexpected error %A"), 
+//                        (fun _ -> barrier.Set() |> ignore), 
+//                        cts.Token
+//                    )
+//
+//        // wait a bit then signal cancellation
+//        let timeout = wait barrier 500
+//        Assert.IsFalse(timeout, "timeout=true is not expected")
+//
+//        cts.Cancel()
+//
+//        // wait 10 seconds for completion
+//        let ok = wait barrier 10000
+//        if not ok then Assert.Fail("Async computation was not completed in given time")
 
-        Async.AwaitWaitHandle(waitHandle, 5000)
-        |> Async.Ignore
-        |> fun c -> 
-                    Async.StartWithContinuations(
-                        c, 
-                        (failwithf "Unexpected success %A"), 
-                        (failwithf "Unexpected error %A"), 
-                        (fun _ -> barrier.Set() |> ignore), 
-                        cts.Token
-                    )
-
-        // wait a bit then signal cancellation
-        let timeout = wait barrier 500
-        Assert.IsFalse(timeout, "timeout=true is not expected")
-
-        cts.Cancel()
-
-        // wait 10 seconds for completion
-        let ok = wait barrier 10000
-        if not ok then Assert.Fail("Async computation was not completed in given time")
-    
     [<Test>]
     member this.``AwaitWaitHandle.DisposedWaitHandle1``() = 
         let wh = new System.Threading.ManualResetEvent(false)
@@ -323,31 +315,31 @@ type AsyncModule() =
             :? System.OperationCanceledException -> ()
         Assert.AreEqual(1, !flag)
 
-    [<Test>]
-    member this.``OnCancel.CancelThatWasSignalledBeforeRunningTheComputation``() = 
-        let test() = 
-            let cts = new System.Threading.CancellationTokenSource()
-            let go e (flag : bool ref) = async {
-                let! _ = Async.AwaitWaitHandle e
-                sleep 500
-                use! _holder = Async.OnCancel(fun () -> flag := true)
-                while true do
-                    do! Async.Sleep 100
-                }
-
-            let evt = new System.Threading.ManualResetEvent(false)
-            let finish = new System.Threading.ManualResetEvent(false)
-            let cancelledWasCalled = ref false
-            Async.StartWithContinuations(go evt cancelledWasCalled, ignore, ignore, (fun _ -> finish.Set() |> ignore),  cancellationToken = cts.Token)
-            sleep 500
-            evt.Set() |> ignore
-            cts.Cancel()
-
-            let ok = wait finish 3000
-            Assert.IsTrue(ok, "Computation should be completed")
-            Assert.IsFalse(!cancelledWasCalled, "Cancellation handler should not be called")
-
-        for _i = 1 to 3 do test()
+//    [<Test>]
+//    member this.``OnCancel.CancelThatWasSignalledBeforeRunningTheComputation``() = 
+//        let test() = 
+//            let cts = new System.Threading.CancellationTokenSource()
+//            let go e (flag : bool ref) = async {
+//                let! _ = Async.AwaitWaitHandle e
+//                sleep 500
+//                use! _holder = Async.OnCancel(fun () -> flag := true)
+//                while true do
+//                    do! Async.Sleep 100
+//                }
+//
+//            let evt = new System.Threading.ManualResetEvent(false)
+//            let finish = new System.Threading.ManualResetEvent(false)
+//            let cancelledWasCalled = ref false
+//            Async.StartWithContinuations(go evt cancelledWasCalled, ignore, ignore, (fun _ -> finish.Set() |> ignore),  cancellationToken = cts.Token)
+//            sleep 500
+//            evt.Set() |> ignore
+//            cts.Cancel()
+//
+//            let ok = wait finish 3000
+//            Assert.IsTrue(ok, "Computation should be completed")
+//            Assert.IsFalse(!cancelledWasCalled, "Cancellation handler should not be called")
+//
+//        for _i = 1 to 3 do test()
 
 
     [<Test; Category("Expensive"); Explicit>]
