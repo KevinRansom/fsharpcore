@@ -11,7 +11,7 @@ open NUnit.Framework
 open FsCheck
 open Utils
 
-let smallerSizeCheck testable = Check.One({ Config.QuickThrowOnFailure with EndSize = 25 }, testable)
+let smallerSizeCheck testable = Check.One({ Config.QuickThrowOnFailure with EndSize = 5 }, testable)
 
 /// helper function that creates labeled FsCheck properties for equality comparisons
 let consistency name sqs ls arr =
@@ -1205,12 +1205,15 @@ let unfold<'a,'b when 'b : equality> f (start:'a) =
 let ``unfold is consistent`` () =
     smallerSizeCheck unfold<int,int>
 
+
+#if EXPENSIVE
 [<Test; Category("Expensive"); Explicit>]
 let ``unfold is consistent full`` () =
     smallerSizeCheck unfold<int,int>
     smallerSizeCheck unfold<string,string>
     smallerSizeCheck unfold<float,int>
     smallerSizeCheck unfold<float,string>
+#endif
 
 let unzip<'a when 'a : equality> (xs:('a*'a) []) =       
     // no seq version

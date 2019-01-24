@@ -747,7 +747,8 @@ type OperatorsModule1() =
         let boundenum = Operators.enum<System.ConsoleColor> normalarg
         Assert.AreEqual(boundenum, System.ConsoleColor.Blue)
         
-    [<Test;Ignore("See FSB #3826 ? Need way to validate Operators.exit function.")>]
+#if IGNORED_TESTS
+Ignore(    [<Test;Ignore("See FSB #3826 ? Need way to validate Operators.exit function.")>]
     member this.exit() =
         // zero  
         try 
@@ -764,7 +765,8 @@ type OperatorsModule1() =
         // normal value
         let boundexit = Operators.exit 100
         Assert.AreEqual(boundexit, 0)
-        
+#endif
+
     [<Test>]
     member this.exp() =
         // zero   
@@ -880,7 +882,8 @@ type OperatorsModule1() =
         Assert.AreEqual(result,null) 
         
         ()
-        
+
+#if IGNORED_TESTS
     [<Test; Ignore( "[FSharp Bugs 1.0] #3842 - OverflowException does not pop up on Operators.int int16 int 32 int64 ")>]
     member this.incr() =         
         // legit value 
@@ -893,7 +896,8 @@ type OperatorsModule1() =
         CheckThrowsOverflowException(fun() -> Operators.incr result |> ignore)
         
         ()
-        
+#endif
+
     [<Test>]
     member this.infinity() =         
         

@@ -199,7 +199,6 @@ type CancellationType() =
         let asyncs = seq { for i in 1..1000 do yield async { cts.Cancel() } }
         asyncs |> Async.Parallel |> Async.RunSynchronously |> ignore
         Assert.IsTrue(!callbackRun, "Callback should run at least once")
-        
 
     [<Test>]
     member this.TestRegistrationRace() =
@@ -215,7 +214,8 @@ type CancellationType() =
                         }                     
             }               
         (asyncs |> Async.Parallel |> Async.RunSynchronously |> ignore)
-        
+
+#if FLAKEY
     [<Test>]
     member this.LinkedSourceCancellationRace() =
         let asyncs =
@@ -229,7 +229,9 @@ type CancellationType() =
                     yield async { do linkedCts.Dispose() }                     
             }               
         asyncs |> Async.Parallel |> Async.RunSynchronously |> ignore
+#endif
 
+#if FLAKEY
     [<Test>]
     member this.AwaitTaskCancellationAfterAsyncTokenCancellation() =
         let StartCatchCancellation cancellationToken (work) =
@@ -282,6 +284,7 @@ type CancellationType() =
             let res = t.Wait(1000)
             Assert.Fail (sprintf "Excepted TimeoutException wrapped in an AggregateException, but got %A" res)
         with :? AggregateException as agg -> ()
+#endif
 
     [<Test>]
     member this.Equality() =

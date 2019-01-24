@@ -232,32 +232,32 @@ type AsyncModule() =
         let delta = endTime - startTime
         Assert.IsTrue(delta.TotalMilliseconds < 1100.0, sprintf "Expected faster timeout than %.0f ms" delta.TotalMilliseconds)
 
-//    [<Test>]
-//    member this.``AwaitWaitHandle.TimeoutWithCancellation``() = 
-//        use barrier = new System.Threading.ManualResetEvent(false)
-//        use waitHandle = new System.Threading.ManualResetEvent(false)
-//        let cts = new System.Threading.CancellationTokenSource()
-//
-//        Async.AwaitWaitHandle(waitHandle, 5000)
-//        |> Async.Ignore
-//        |> fun c -> 
-//                    Async.StartWithContinuations(
-//                        c, 
-//                        (failwithf "Unexpected success %A"), 
-//                        (failwithf "Unexpected error %A"), 
-//                        (fun _ -> barrier.Set() |> ignore), 
-//                        cts.Token
-//                    )
-//
-//        // wait a bit then signal cancellation
-//        let timeout = wait barrier 500
-//        Assert.IsFalse(timeout, "timeout=true is not expected")
-//
-//        cts.Cancel()
-//
-//        // wait 10 seconds for completion
-//        let ok = wait barrier 10000
-//        if not ok then Assert.Fail("Async computation was not completed in given time")
+    [<Test>]
+    member this.``AwaitWaitHandle.TimeoutWithCancellation``() = 
+        use barrier = new System.Threading.ManualResetEvent(false)
+        use waitHandle = new System.Threading.ManualResetEvent(false)
+        let cts = new System.Threading.CancellationTokenSource()
+
+        Async.AwaitWaitHandle(waitHandle, 5000)
+        |> Async.Ignore
+        |> fun c -> 
+                    Async.StartWithContinuations(
+                        c, 
+                        (failwithf "Unexpected success %A"), 
+                        (failwithf "Unexpected error %A"), 
+                        (fun _ -> barrier.Set() |> ignore), 
+                        cts.Token
+                    )
+
+        // wait a bit then signal cancellation
+        let timeout = wait barrier 500
+        Assert.IsFalse(timeout, "timeout=true is not expected")
+
+        cts.Cancel()
+
+        // wait 10 seconds for completion
+        let ok = wait barrier 10000
+        if not ok then Assert.Fail("Async computation was not completed in given time")
 
     [<Test>]
     member this.``AwaitWaitHandle.DisposedWaitHandle1``() = 
@@ -315,33 +315,34 @@ type AsyncModule() =
             :? System.OperationCanceledException -> ()
         Assert.AreEqual(1, !flag)
 
-//    [<Test>]
-//    member this.``OnCancel.CancelThatWasSignalledBeforeRunningTheComputation``() = 
-//        let test() = 
-//            let cts = new System.Threading.CancellationTokenSource()
-//            let go e (flag : bool ref) = async {
-//                let! _ = Async.AwaitWaitHandle e
-//                sleep 500
-//                use! _holder = Async.OnCancel(fun () -> flag := true)
-//                while true do
-//                    do! Async.Sleep 100
-//                }
-//
-//            let evt = new System.Threading.ManualResetEvent(false)
-//            let finish = new System.Threading.ManualResetEvent(false)
-//            let cancelledWasCalled = ref false
-//            Async.StartWithContinuations(go evt cancelledWasCalled, ignore, ignore, (fun _ -> finish.Set() |> ignore),  cancellationToken = cts.Token)
-//            sleep 500
-//            evt.Set() |> ignore
-//            cts.Cancel()
-//
-//            let ok = wait finish 3000
-//            Assert.IsTrue(ok, "Computation should be completed")
-//            Assert.IsFalse(!cancelledWasCalled, "Cancellation handler should not be called")
-//
-//        for _i = 1 to 3 do test()
+    [<Test>]
+    member this.``OnCancel.CancelThatWasSignalledBeforeRunningTheComputation``() = 
+        let test() = 
+            let cts = new System.Threading.CancellationTokenSource()
+            let go e (flag : bool ref) = async {
+                let! _ = Async.AwaitWaitHandle e
+                sleep 500
+                use! _holder = Async.OnCancel(fun () -> flag := true)
+                while true do
+                    do! Async.Sleep 100
+                }
+
+            let evt = new System.Threading.ManualResetEvent(false)
+            let finish = new System.Threading.ManualResetEvent(false)
+            let cancelledWasCalled = ref false
+            Async.StartWithContinuations(go evt cancelledWasCalled, ignore, ignore, (fun _ -> finish.Set() |> ignore),  cancellationToken = cts.Token)
+            sleep 500
+            evt.Set() |> ignore
+            cts.Cancel()
+
+            let ok = wait finish 3000
+            Assert.IsTrue(ok, "Computation should be completed")
+            Assert.IsFalse(!cancelledWasCalled, "Cancellation handler should not be called")
+
+        for _i = 1 to 3 do test()
 
 
+#if EXPENSIVE
     [<Test; Category("Expensive"); Explicit>]
     member this.``Async.AwaitWaitHandle does not leak memory`` () =
         // This test checks that AwaitWaitHandle does not leak continuations (described in #131),
@@ -375,7 +376,9 @@ type AsyncModule() =
         
         // The leak hangs on a race condition which is really hard to trigger in F# 3.0, hence the 100000 runs...
         for _ in 1..10 do tryToLeak()
-           
+#endif
+
+#if FLAKEY
     [<Test>]
     member this.``AwaitWaitHandle.DisposedWaitHandle2``() = 
         let wh = new System.Threading.ManualResetEvent(false)
@@ -395,6 +398,7 @@ type AsyncModule() =
         
         let ok = wait barrier 10000
         if not ok then Assert.Fail("Async computation was not completed in given time")
+#endif
 
     [<Test>]
     member this.``RunSynchronously.NoThreadJumpsAndTimeout``() = 
@@ -433,11 +437,13 @@ type AsyncModule() =
     member this.``RaceBetweenCancellationAndError.Sleep``() =
         testErrorAndCancelRace (Async.Sleep (-5))
 
+#if EXPENSIVE
 #if NET46
     [<Test; Category("Expensive"); Explicit>] // takes 3 minutes!
     member this.``Async.Choice specification test``() =
         ThreadPool.SetMinThreads(100,100) |> ignore
         Check.One ({Config.QuickThrowOnFailure with EndSize = 20}, normalize >> runChoice)
+#endif
 #endif
 
     [<Test>]
@@ -452,6 +458,7 @@ type AsyncModule() =
 
         Assert.AreEqual((), result)
 
+#if FLAKEY
     [<Test>]
     member this.``error on one workflow should cancel all others``() =
         let counter = 
@@ -470,6 +477,7 @@ type AsyncModule() =
             } |> Async.RunSynchronously
 
         Assert.AreEqual(0, counter)
+#endif
 
     [<Test>]
     member this.``AwaitWaitHandle.ExceptionsAfterTimeout``() = 
@@ -557,6 +565,7 @@ type AsyncModule() =
         Assert.AreEqual("boom", !r)
 
 
+#if IGNORED
     [<Test; Ignore("See https://github.com/Microsoft/visualfsharp/issues/4887")>]
     member this.``SleepContinuations``() = 
         let okCount = ref 0
@@ -583,6 +592,7 @@ type AsyncModule() =
         for i = 1 to 3 do test()
         Assert.AreEqual(0, !okCount)
         Assert.AreEqual(0, !errCount)
+#endif
 
     [<Test>]
     member this.``Async caching should work``() = 

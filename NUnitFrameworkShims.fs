@@ -1,20 +1,22 @@
 // Copyright (c) Microsoft Corporation.  All Rights Reserved.  See License.txt in the project root for license information.
 
 namespace NUnit.Framework
+
 open System
 open System.Collections.Generic
+open System.Linq
 
 #if XUNIT
 open Xunit
+
+type TestAttribute() =
+    inherit FactAttribute()
 
 type TestFixtureAttribute() =
     inherit System.Attribute()
 
 type Explicit() =
     inherit System.Attribute()
-
-type TestAttribute() =
-    inherit FactAttribute()
 
 type SetUpAttribute() =
     inherit System.Attribute()
@@ -28,8 +30,10 @@ type TearDownAttribute() =
 
 type IgnoreAttribute (_comment:string) =
     inherit System.Attribute ()
-
 #endif
+
+// Alias NUnit and XUnit Assert  as LocalAssert
+type TestFrameworkAssert = Assert
 
 exception AssertionException of string
 
@@ -51,11 +55,12 @@ module private Impl =
             | :? seq<int32> as seq -> seq |> Seq.toArray :>obj
             | :? seq<uint16> as seq -> seq |> Seq.toArray :>obj
             | :? seq<int16> as seq -> seq |> Seq.toArray :>obj
-            | :? seq<sbyte> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<sbyte> as seq -> Enumerable.ToArray(seq) :>obj
             | :? seq<byte> as seq -> seq |> Seq.toArray :>obj
             | :? seq<char> as seq -> seq |> Seq.toArray :>obj
             | :? seq<bool> as seq -> seq |> Seq.toArray :>obj
             | :? seq<string> as seq -> seq |> Seq.toArray :>obj
+            | :? seq<IntPtr> as seq -> seq |> Seq.toArray :>obj
             | :? seq<UIntPtr> as seq -> seq |> Seq.toArray :>obj
             | :? seq<obj> as seq -> seq |> Seq.toArray :>obj
             | _ -> o
@@ -116,9 +121,13 @@ type Assert =
 
     static member Fail(message : string, args : obj[]) = Assert.Fail(String.Format(message,args))
 
-    static member Throws( except, func: unit -> unit ) = Assert.Throws(except, func)
+#if XUNIT
+    static member Throws(except:Type, func: unit -> unit ) = TestFrameworkAssert.Throws(except, new Action(func))
+#else
+    static member Throws(except:Type, func: unit -> unit ) = TestFrameworkAssert.Throws(except, TestDelegate(func))
+#endif
 
-    type CollectionAssert =
-        static member AreEqual(expected, actual) = 
-            Assert.AreEqual(expected, actual)
+type CollectionAssert =
+    static member AreEqual(expected, actual) = 
+        Assert.AreEqual(expected, actual)
 

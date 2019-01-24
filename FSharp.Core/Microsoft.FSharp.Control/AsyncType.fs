@@ -315,7 +315,7 @@ type AsyncType() =
             e -> exceptionThrown <- true
         Assert.IsTrue (t.IsFaulted)
         Assert.IsTrue(exceptionThrown)
-        
+#if IGNORED_TESTS
     [<Test>]
     [<Ignore("https://github.com/Microsoft/visualfsharp/issues/4337")>]
     member this.CancellationPropagatesToImmediateTask () =
@@ -335,7 +335,9 @@ type AsyncType() =
         with e -> exceptionThrown <- true
         Assert.IsTrue (exceptionThrown)   
         Assert.IsTrue(t.IsCanceled)            
-        
+#endif
+
+#if IGNORED_TESTS
     [<Test>]
     [<Ignore("https://github.com/Microsoft/visualfsharp/issues/4337")>]
     member this.CancellationPropagatesToGroupImmediate () =
@@ -365,7 +367,7 @@ type AsyncType() =
         Assert.IsTrue (exceptionThrown)   
         Assert.IsTrue(t.IsCanceled)      
         Assert.IsTrue(!cancelled)      
-
+#endif
 
     [<Test>]
     member this.TaskAsyncValue () =
