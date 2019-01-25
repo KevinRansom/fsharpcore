@@ -150,6 +150,31 @@ type SeqModule2() =
         ()
 
     [<Test>]
+    member this.TryExactlyOne() =
+        let IntSeq =
+            seq { for i in 7 .. 7 do
+                    yield i }
+
+        Assert.AreEqual(Some 7, Seq.tryExactlyOne IntSeq)
+
+        // string Seq
+        let strSeq = seq ["second"]
+        Assert.AreEqual(Some "second", Seq.tryExactlyOne strSeq)
+
+        // Empty Seq
+        let emptySeq = Seq.empty
+        Assert.AreEqual(None, Seq.tryExactlyOne emptySeq)
+
+        // non-singleton Seq
+        let nonSingletonSeq = [ 0 .. 1 ]
+        Assert.AreEqual(None, Seq.tryExactlyOne nonSingletonSeq)
+
+        // null Seq
+        let nullSeq:seq<'a> = null
+        CheckThrowsArgumentNullException (fun () -> Seq.tryExactlyOne nullSeq |> ignore)
+        ()
+
+    [<Test>]
     member this.Init() =
 
         let funcInt x = x

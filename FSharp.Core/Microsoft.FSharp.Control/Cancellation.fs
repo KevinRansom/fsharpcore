@@ -215,7 +215,6 @@ type CancellationType() =
             }               
         (asyncs |> Async.Parallel |> Async.RunSynchronously |> ignore)
 
-#if FLAKEY
     [<Test>]
     member this.LinkedSourceCancellationRace() =
         let asyncs =
@@ -229,9 +228,7 @@ type CancellationType() =
                     yield async { do linkedCts.Dispose() }                     
             }               
         asyncs |> Async.Parallel |> Async.RunSynchronously |> ignore
-#endif
 
-#if FLAKEY
     [<Test>]
     member this.AwaitTaskCancellationAfterAsyncTokenCancellation() =
         let StartCatchCancellation cancellationToken (work) =

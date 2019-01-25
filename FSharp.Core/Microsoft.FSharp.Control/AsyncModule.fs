@@ -341,7 +341,6 @@ type AsyncModule() =
 
         for _i = 1 to 3 do test()
 
-
 #if EXPENSIVE
     [<Test; Category("Expensive"); Explicit>]
     member this.``Async.AwaitWaitHandle does not leak memory`` () =
@@ -378,7 +377,6 @@ type AsyncModule() =
         for _ in 1..10 do tryToLeak()
 #endif
 
-#if FLAKEY
     [<Test>]
     member this.``AwaitWaitHandle.DisposedWaitHandle2``() = 
         let wh = new System.Threading.ManualResetEvent(false)
@@ -398,7 +396,6 @@ type AsyncModule() =
         
         let ok = wait barrier 10000
         if not ok then Assert.Fail("Async computation was not completed in given time")
-#endif
 
     [<Test>]
     member this.``RunSynchronously.NoThreadJumpsAndTimeout``() = 
@@ -458,7 +455,6 @@ type AsyncModule() =
 
         Assert.AreEqual((), result)
 
-#if FLAKEY
     [<Test>]
     member this.``error on one workflow should cancel all others``() =
         let counter = 
@@ -477,7 +473,6 @@ type AsyncModule() =
             } |> Async.RunSynchronously
 
         Assert.AreEqual(0, counter)
-#endif
 
     [<Test>]
     member this.``AwaitWaitHandle.ExceptionsAfterTimeout``() = 

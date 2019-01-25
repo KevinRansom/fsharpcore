@@ -249,7 +249,6 @@ type ValueOptionTests() =
         Assert.AreEqual(defaultValueArg ValueNone 1, 1)
         Assert.AreEqual(defaultValueArg (ValueSome 3) 1, 3)
     
-(*
     [<Test>]
     member this.Flatten () =
         Assert.AreEqual(ValueOption.flatten ValueNone, ValueNone)
@@ -446,4 +445,3 @@ type ValueOptionTests() =
         let fn x = x + 3
         Assert.AreEqual(ValueOption.map fn ValueNone, ValueOption.bind (fn >> ValueSome) ValueNone)
         Assert.AreEqual(ValueOption.map fn (ValueSome 5), ValueOption.bind (fn >> ValueSome) (ValueSome 5))
-*)

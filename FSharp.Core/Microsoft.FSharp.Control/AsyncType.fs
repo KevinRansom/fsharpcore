@@ -315,7 +315,8 @@ type AsyncType() =
             e -> exceptionThrown <- true
         Assert.IsTrue (t.IsFaulted)
         Assert.IsTrue(exceptionThrown)
-#if IGNORED_TESTS
+
+#if IGNORED
     [<Test>]
     [<Ignore("https://github.com/Microsoft/visualfsharp/issues/4337")>]
     member this.CancellationPropagatesToImmediateTask () =
@@ -337,7 +338,7 @@ type AsyncType() =
         Assert.IsTrue(t.IsCanceled)            
 #endif
 
-#if IGNORED_TESTS
+#if IGNORED
     [<Test>]
     [<Ignore("https://github.com/Microsoft/visualfsharp/issues/4337")>]
     member this.CancellationPropagatesToGroupImmediate () =
@@ -350,11 +351,7 @@ type AsyncType() =
             }
         let cts = new CancellationTokenSource()
         let token = cts.Token
-#if !NET46
-        let t = 
-#else
         use t =
-#endif
             Async.StartImmediateAsTask(a, cancellationToken=token)
 //        printfn "%A" t.Status
         ewh.WaitOne() |> Assert.IsTrue

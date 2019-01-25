@@ -11,7 +11,7 @@ open NUnit.Framework
 open FsCheck
 open Utils
 
-let smallerSizeCheck testable = Check.One({ Config.QuickThrowOnFailure with EndSize = 5 }, testable)
+let smallerSizeCheck testable = Check.One({ Config.QuickThrowOnFailure with EndSize = 25 }, testable)
 
 /// helper function that creates labeled FsCheck properties for equality comparisons
 let consistency name sqs ls arr =
@@ -199,6 +199,18 @@ let ``exactlyOne is consistent`` () =
     smallerSizeCheck exactlyOne<int>
     smallerSizeCheck exactlyOne<string>
     smallerSizeCheck exactlyOne<NormalFloat>
+
+let tryExactlyOne<'a when 'a : comparison> (xs : 'a []) =
+    let s = runAndCheckErrorType (fun () -> xs |> Seq.tryExactlyOne)
+    let l = runAndCheckErrorType (fun () -> xs |> List.ofArray |> List.tryExactlyOne)
+    let a = runAndCheckErrorType (fun () -> xs |> Array.tryExactlyOne)
+    consistency "tryExactlyOne" s l a
+
+[<Test>]
+let ``tryExactlyOne is consistent`` () =
+    smallerSizeCheck tryExactlyOne<int>
+    smallerSizeCheck tryExactlyOne<string>
+    smallerSizeCheck tryExactlyOne<NormalFloat>
 
 let except<'a when 'a : equality> (xs : 'a []) (itemsToExclude: 'a []) =
     let s = xs |> Seq.except itemsToExclude |> Seq.toArray
@@ -1204,7 +1216,6 @@ let unfold<'a,'b when 'b : equality> f (start:'a) =
 [<Test>]
 let ``unfold is consistent`` () =
     smallerSizeCheck unfold<int,int>
-
 
 #if EXPENSIVE
 [<Test; Category("Expensive"); Explicit>]
